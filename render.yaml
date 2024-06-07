@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: speech_recognition_system_module
+    env: python
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "gunicorn app:app"
+    build:
+      packages:
+        - portaudio19-dev
