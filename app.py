@@ -2,7 +2,8 @@ from flask import Flask, request, jsonify
 import tensorflow as tf
 import numpy as np
 import wave
-import pyaudio
+#import pyaudio
+import sounddevice as sd
 import librosa
 import scipy.io.wavfile as wavfile
 import noisereduce as nr
@@ -10,52 +11,27 @@ import noisereduce as nr
 app = Flask(__name__)
 
 #Function to record audio
-def record_audio(filename, duration=2, sample_rate=16000, channels=2, chunk_size=3200):
-    # Initialize pyaudio
-    p = pyaudio.PyAudio()
-
-    # Open stream
-    stream = p.open(format=pyaudio.paInt16,
-                    channels=channels,
-                    rate=sample_rate,
-                    input=True,
-                    frames_per_buffer=chunk_size)
+def record_audio(filename, duration=2, sample_rate=16000, channels=2):
     print("Recording...")
 
-    frames = []
-    # Record for the given duration
-    for _ in range(0, int(sample_rate / chunk_size * duration)):
-        data = stream.read(chunk_size)
-        frames.append(data)
+    # Record audio
+    recording = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=channels, dtype='int16')
+    sd.wait()  # Wait until recording is finished
 
     print("Recording finished.")
-    # Stop and close the stream
-    stream.stop_stream()
-    stream.close()
-    p.terminate()
 
     # Convert stereo to mono if necessary
     if channels == 2:
-        mono_frames = []
-        for frame in frames:
-            # Convert bytes to numpy array
-            stereo_data = np.frombuffer(frame, dtype=np.int16)
-            # Reshape array to 2D array (2 channels)
-            stereo_data = stereo_data.reshape(-1, 2)
-            # Average the two channels to get mono data
-            mono_data = stereo_data.mean(axis=1).astype(np.int16)
-            # Convert numpy array back to bytes
-            mono_frames.append(mono_data.tobytes())
-
-        # Replace frames with mono frames
-        frames = mono_frames
+        # Average the two channels to get mono data
+        recording = recording.mean(axis=1).astype(np.int16)
 
     # Save the recorded data as a WAV file
     with wave.open(filename, 'wb') as wf:
         wf.setnchannels(1)  # Set number of channels to 1 (mono)
-        wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
+        wf.setsampwidth(2)  # Sample width in bytes, 2 bytes for 'int16' format
         wf.setframerate(sample_rate)
-        wf.writeframes(b''.join(frames))
+        wf.writeframes(recording.tobytes())
+
 
 #Functions to pre-process the audio
 def load_audio(file_path, sr=16000):
@@ -204,6 +180,3 @@ def predict():
     transcript = np.argmax(prediction, axis= 1)
     print( f'Predicted transcript "{commands[transcript[0]]}"')
     return jsonify({"transcript": commands[transcript[0]]})
-
-if __name__ == "__main__":
-    app.run(debug=True)
