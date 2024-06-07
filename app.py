@@ -205,4 +205,5 @@ def predict():
     print( f'Predicted transcript "{commands[transcript[0]]}"')
     return jsonify({"transcript": commands[transcript[0]]})
 
-
+if __name__ == "__main__":
+    app.run(debug=True)
