@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='style.css') }}"
+    />
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css"
+      rel="stylesheet"
+    />
+    <title>Speech Recognition System</title>
+  </head>
+  <body>
+    <div class="conainermain">
+      <div class="headingcontainer">
+        <h1 class="mainheading">SPEECH RECOGNITION SYSTEM</h1>
+      </div>
+      <div class="container">
+        <button id="recordButton"><i class="bi bi-mic-fill"></i>Record</button>
+        <textarea
+          onclick="reloadAudio()"
+          id="transcript"
+          placeholder="Transcribed Text Will apear here"
+        ></textarea>
+        <audio controls id="audio-player">
+          <source src="{{ audio_file_path }}" type="audio/wav" />
+        </audio>
+      </div>
+    </div>
+    <script>
+      const transcriptInput = document.getElementById("transcript");
+      const recordButton = document.getElementById("recordButton");
+
+      recordButton.addEventListener("click", async () => {
+        recordButton.style.display = "none";
+        try {
+          const response = await fetch("/record", {
+            method: "POST",
+          });
+
+          if (response.ok) {
+            document.getElementById("recordButton").disabled = false;
+            const transcriptionResponse = await fetch("/predict");
+            const transcriptionData = await transcriptionResponse.json();
+            transcriptInput.value = transcriptionData.transcript;
+          } else {
+            console.error("Recording failed.");
+          }
+        } catch (error) {
+          console.error("Error recording:", error);
+        } finally {
+          // Show the record button after 2 seconds
+          recordButton.style.display = "block";
+        }
+      });
+
+      function reloadAudio() {
+        var audio = document.getElementById("audio-player");
+        audio.load(); // Load the audio
+      }
+    </script>
+  </body>
+</html>

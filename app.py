@@ -1,9 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 import tensorflow as tf
 import numpy as np
 import wave
+import speech_recognition as sr
 #import pyaudio
-import sounddevice as sd
+#import sounddevice as sd
 import librosa
 import scipy.io.wavfile as wavfile
 import noisereduce as nr
@@ -11,28 +12,21 @@ import noisereduce as nr
 app = Flask(__name__)
 
 #Function to record audio
-def record_audio(filename, duration=2, sample_rate=16000, channels=2):
+def record_audio(filename, duration=2, sample_rate=16000):
+    recognizer = sr.Recognizer()
+    microphone = sr.Microphone(sample_rate=sample_rate)
+    
     print("Recording...")
-
-    # Record audio
-    recording = sd.rec(int(duration * sample_rate), samplerate=sample_rate, channels=channels, dtype='int16')
-    sd.wait()  # Wait until recording is finished
-
+    with microphone as source:
+        recognizer.adjust_for_ambient_noise(source)
+        audio = recognizer.record(source, duration=duration)
     print("Recording finished.")
-
-    # Convert stereo to mono if necessary
-    if channels == 2:
-        # Average the two channels to get mono data
-        recording = recording.mean(axis=1).astype(np.int16)
-
-    # Save the recorded data as a WAV file
-    with wave.open(filename, 'wb') as wf:
-        wf.setnchannels(1)  # Set number of channels to 1 (mono)
-        wf.setsampwidth(2)  # Sample width in bytes, 2 bytes for 'int16' format
-        wf.setframerate(sample_rate)
-        wf.writeframes(recording.tobytes())
-
-
+    
+    # Saving the recorded data as a WAV file
+    with open(filename, "wb") as f:
+        f.write(audio.get_wav_data())
+     
+        
 #Functions to pre-process the audio
 def load_audio(file_path, sr=16000):
     """ Load audio file with a fixed sample rate """
@@ -45,7 +39,7 @@ def save_audio(file_path, y, sr):
 
 def remove_noise(y, sr):
     """ Remove noise from audio signal """
-    # Reduce noise
+    # Reducing noise
     y_denoised = nr.reduce_noise(y=y, sr=sr)
     return y_denoised
 
@@ -60,19 +54,20 @@ def trim_silence(y, top_db=20):
 
 def process_audio(input_file, output_file, sr=16000):
     """ Load, clean, normalize, trim, and save audio file with a fixed sample rate """
-    # Load the audio file
+    # Loading the audio file
     y, sr = load_audio(input_file, sr)
     
-    # Remove noise
+    # Removing noise
     y_denoised = remove_noise(y, sr)
     
-    # Normalize the audio
+    # Normalizing the audio
     y_normalized = normalize_audio(y_denoised)
     
-    # Trim leading and trailing silence
+    # Trimming leading and trailing silence
+    
     y_trimmed = trim_silence(y_normalized)
     
-    # Save the cleaned, normalized, and trimmed audio to a new file
+    # Saving the cleaned, normalized, and trimmed audio to a new file
     save_audio(output_file, y_trimmed, sr)
     
     print(f"Cleaned, normalized, and trimmed audio saved to {output_file}")
@@ -137,24 +132,30 @@ commands =  ['dzosera', 'fachuka', 'fodya', 'asi', 'finyana', 'badza', 'dzinga',
              'evhangero', 'dare', 'bhodho', 'bhizautare', 'fobha', 'fungidziro', 'dzimura', 'fudzi', 'evo',
              'bandana', 'dzipa', 'baramhanya', 'chamunyurududu']
 
-output_file = 'audio/output.wav'
+output_file = 'static/audio/output.wav'
 duration = 2  # Duration of recording in seconds
 
 # Loading the model
 loaded_model = tf.saved_model.load("savd_modl")
 
 
+# Route to serve the main HTML PAGE
+@app.route('/')
+def index():
+    audio_file_path = "static/audio/output_cleaned_normalized_trimmed.wav" 
+    return render_template('index.html', audio_file_path=audio_file_path)
+
 # Route to record
 @app.route("/record", methods=["POST"])
 def record_to_search():
     
     # Records audio and  change it to wave, and channel to 1(mono)
-    record_audio(output_file, duration, channels=2)  # Record with stereo input
+    record_audio(output_file, duration, sample_rate=16000)  # Record with stereo input
     print(f"Audio recorded and saved as {output_file}")
     
     # Clean(remove noise, normalise) the recorded saved file, and save the new cleaned file
     input_file = output_file
-    sample_file = 'audio/output_cleaned_normalized_trimmed.wav'
+    sample_file = 'static/audio/output_cleaned_normalized_trimmed.wav'
     process_audio(input_file, sample_file)
     return jsonify({"message":"Audio recorded and saved"})
 
@@ -162,7 +163,7 @@ def record_to_search():
 # Route to get transcription
 @app.route("/predict", methods=["GET"])
 def predict():
-    file_final = 'audio/output_cleaned_normalized_trimmed.wav'
+    file_final = 'static/audio/output_cleaned_normalized_trimmed.wav'
     obj = wave.open(str( file_final), 'rb')
     n_samples = obj.getnframes()
     signal_wave = obj.readframes(n_samples)
@@ -180,3 +181,6 @@ def predict():
     transcript = np.argmax(prediction, axis= 1)
     print( f'Predicted transcript "{commands[transcript[0]]}"')
     return jsonify({"transcript": commands[transcript[0]]})
+
+if __name__ == "__main__":
+    app.run( debug=False)
