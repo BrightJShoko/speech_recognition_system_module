@@ -1,30 +1,88 @@
 from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
+import os
 import tensorflow as tf
 import numpy as np
 import wave
 import speech_recognition as sr
-#import pyaudio
+import pyaudio
 #import sounddevice as sd
 import librosa
 import scipy.io.wavfile as wavfile
 import noisereduce as nr
 
 app = Flask(__name__)
+CORS(app)
+
+# Function to clear the directory
+def clear_directory(directory):
+    """
+    Clears the contents of the specified directory.
+    
+    Args:
+        directory (str): The path to the directory to be cleared.
+        
+    Returns:
+        None
+    """
+    for filename in os.listdir(directory):
+        file_path = os.path.join(directory, filename)
+        try:
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                clear_directory(file_path)
+                os.rmdir(file_path)
+        except Exception as e:
+            print(f"Failed to delete {file_path}. Reason: {e}")
 
 #Function to record audio
-def record_audio(filename, duration=2, sample_rate=16000):
-    recognizer = sr.Recognizer()
-    microphone = sr.Microphone(sample_rate=sample_rate)
-    
+def record_audio(filename, duration=2, sample_rate=16000, channels=2, chunk_size=3200):
+    # Initialize pyaudio
+    p = pyaudio.PyAudio()
+
+    # Open stream
+    stream = p.open(format=pyaudio.paInt16,
+                    channels=channels,
+                    rate=sample_rate,
+                    input=True,
+                    frames_per_buffer=chunk_size)
     print("Recording...")
-    with microphone as source:
-        recognizer.adjust_for_ambient_noise(source)
-        audio = recognizer.record(source, duration=duration)
+
+    frames = []
+    # Record for the given duration
+    for _ in range(0, int(sample_rate / chunk_size * duration)):
+        data = stream.read(chunk_size)
+        frames.append(data)
+
     print("Recording finished.")
-    
-    # Saving the recorded data as a WAV file
-    with open(filename, "wb") as f:
-        f.write(audio.get_wav_data())
+    # Stop and close the stream
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+
+    # Convert stereo to mono if necessary
+    if channels == 2:
+        mono_frames = []
+        for frame in frames:
+            # Convert bytes to numpy array
+            stereo_data = np.frombuffer(frame, dtype=np.int16)
+            # Reshape array to 2D array (2 channels)
+            stereo_data = stereo_data.reshape(-1, 2)
+            # Average the two channels to get mono data
+            mono_data = stereo_data.mean(axis=1).astype(np.int16)
+            # Convert numpy array back to bytes
+            mono_frames.append(mono_data.tobytes())
+
+        # Replace frames with mono frames
+        frames = mono_frames
+
+    # Save the recorded data as a WAV file
+    with wave.open(filename, 'wb') as wf:
+        wf.setnchannels(1)  # Set number of channels to 1 (mono)
+        wf.setsampwidth(p.get_sample_size(pyaudio.paInt16))
+        wf.setframerate(sample_rate)
+        wf.writeframes(b''.join(frames))
      
         
 #Functions to pre-process the audio
@@ -132,6 +190,9 @@ commands =  ['dzosera', 'fachuka', 'fodya', 'asi', 'finyana', 'badza', 'dzinga',
              'evhangero', 'dare', 'bhodho', 'bhizautare', 'fobha', 'fungidziro', 'dzimura', 'fudzi', 'evo',
              'bandana', 'dzipa', 'baramhanya', 'chamunyurududu']
 
+# Define the directory you want to clear
+directory_to_clear = "static/audio"
+
 output_file = 'static/audio/output.wav'
 duration = 2  # Duration of recording in seconds
 
@@ -148,9 +209,9 @@ def index():
 # Route to record
 @app.route("/record", methods=["POST"])
 def record_to_search():
-    
-    # Records audio and  change it to wave, and channel to 1(mono)
-    record_audio(output_file, duration, sample_rate=16000)  # Record with stereo input
+    clear_directory(directory_to_clear)
+   # Records audio and  change it to wave, and channel to 1(mono)
+    record_audio(output_file, duration, channels=2)  # Record with stereo input
     print(f"Audio recorded and saved as {output_file}")
     
     # Clean(remove noise, normalise) the recorded saved file, and save the new cleaned file
@@ -183,4 +244,4 @@ def predict():
     return jsonify({"transcript": commands[transcript[0]]})
 
 if __name__ == "__main__":
-    app.run( debug=False)
+    app.run( debug=True,host='0.0.0.0', port=5000)

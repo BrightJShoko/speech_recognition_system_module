@@ -19,13 +19,15 @@
         <h1 class="mainheading">SPEECH RECOGNITION SYSTEM</h1>
       </div>
       <div class="container">
-        <button id="recordButton"><i class="bi bi-mic-fill"></i>Record</button>
+        <button onclick="reloadAudio()" id="recordButton">
+          <i class="bi bi-mic-fill"></i>Record
+        </button>
         <textarea
           onclick="reloadAudio()"
           id="transcript"
           placeholder="Transcribed Text Will apear here"
         ></textarea>
-        <audio controls id="audio-player">
+        <audio controls id="audio-player" style="display: none">
           <source src="{{ audio_file_path }}" type="audio/wav" />
         </audio>
       </div>
@@ -33,9 +35,13 @@
     <script>
       const transcriptInput = document.getElementById("transcript");
       const recordButton = document.getElementById("recordButton");
+      const audioPlayer = document.getElementById("audio-player");
 
       recordButton.addEventListener("click", async () => {
         recordButton.style.display = "none";
+        audioPlayer.style.display = "none";
+        reloadAudio();
+
         try {
           const response = await fetch("/record", {
             method: "POST",
@@ -52,8 +58,9 @@
         } catch (error) {
           console.error("Error recording:", error);
         } finally {
-          // Show the record button after 2 seconds
           recordButton.style.display = "block";
+          reloadAudio();
+          audioPlayer.style.display = "block";
         }
       });
 
