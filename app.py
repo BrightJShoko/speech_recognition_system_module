@@ -132,63 +132,65 @@ def process_audio(input_file, output_file, sr=16000):
         
 #Function to get the spectogram    
 def get_spectrogram(waveform):
-  # Zero-padding for waveforms with less than 16,000 samples
-  input_len = 16000
-  waveform = waveform[:input_len]
-  zero_padding = tf.zeros([16000] - tf.shape(waveform), dtype=tf.float32)
-  #cast the waveform tensors dtype to float32
-  waveform = tf.cast(waveform, dtype = tf.float32)  
-  #concatinating to achieve the same length for all audio clips
-  equal_length= tf.concat([waveform, zero_padding], 0)
   # Convert the waveform to a spectrogram via a STFT.
-  spectrogram = tf.signal.stft(equal_length, frame_length=255, frame_step=128)
+  spectrogram = tf.signal.stft(
+      waveform, frame_length=255, frame_step=128)
   # Obtain the magnitude of the STFT.
   spectrogram = tf.abs(spectrogram)
   # Add a `channels` dimension, so that the spectrogram can be used
   # as image-like input data with convolution layers (which expect
   # shape (`batch_size`, `height`, `width`, `channels`).
   spectrogram = spectrogram[..., tf.newaxis]
-  return spectrogram          
+  return spectrogram      
 
 #Commands 
-commands =  ['dzosera', 'fachuka', 'fodya', 'asi', 'finyana', 'badza', 'dzinga', 'furura', 'dziva', 
-             'bhabharasi', 'chenura', 'futada', 'dzoro', 'changamire', 'bhinhi', 'farira', 'dhaka', 
-             'edzesera', 'bambo', 'bhanditi', 'bhiya', 'bandaoko', 'dambudziko', 'dimikira', 'dakara',
-             'bhangu', 'aiwa', 'dzvura', 'barika', 'dzviti', 'fembera', 'funidza', 'fupa', 'fuchira', 
-             'bandamba', 'fafadza', 'dana', 'dope', 'foromani', 'era', 'bakatwa', 'fetiraiza', 'dekara',
-             'banganwa', 'foya', 'fakaza', 'chakwaira', 'chakata', 'amaiguru', 'dzinza', 'fudza', 'bhora', 
-             'bhinzi', 'fusha', 'bande', 'amai', 'ani', 'finyama', 'anika', 'enzvo', 'fa', 'futa', 'chibhunu', 
-             'dongorera', 'chera', 'fashanuka', 'fikura', 'chenama', 'baba', 'chapwititi', 'bonga', 'buruuru',
-             'bhavhu', 'akaunzi', 'ema', 'bhurauzi', 'batsira', 'faranuka', 'bhaibheri', 'banzuka', 'bhemba',
-             'fashama', 'fata', 'furaimachina', 'dhura', 'dandaura', 'angere', 'bakayava', 'danga', 'chenjera',
-             'cheneruka', 'dzidza', 'bereka', 'fema', 'bibiritsa', 'bhiridha', 'chanza', 'funda', 'banga', 
-             'famba', 'dhadha', 'edza', 'chidhoma', 'fuko', 'basa', 'fanira', 'chaizvo', 'dandadzi', 'ambuya',
-             'fadza', 'bara', 'apa', 'dehenya', 'chapupu', 'futunuka', 'erera', 'fana', 'fashafasha', 'chibage',
-             'aini', 'dzimwaira', 'e', 'fuga', 'chifananidzo', 'bapiro', 'fumuka', 'apo', 'bhudhi', 'besu', 
-             'fupika', 'fararika', 'bhiza', 'chidimburiso', 'fanana', 'bhitiruti', 'amainini', 'ambuka', 
-             'fushuka', 'dzivirira', 'banya', 'furira', 'feira', 'dama', 'baka', 'daidza', 'fekitari', 
-             "dzoran'ombe", 'dimura', 'eredza', 'dzvova', 'chechi', 'ambuyamudendere', 'bamba', 'bheuka',
-             'fara', 'bambomukunda', 'funa', 'dzvi', 'farariraa', 'foroma', 'fimbi', 'fakazi', 'fararira', 
-             'chibodzwa', 'bandakadzi', 'amburenzi', 'ererana', 'bhatiri', 'bakwa', 'donha', 'dzvoti', 
-             'chabudza', 'dedera', 'dzimbo', 'banha', 'furidza', 'chamhembe', 'dziya', 'dhunduru', 
-             'chidhokwani', 'bandiko', 'dzvamuka', 'dzivisa', 'damba', 'buda', 'batidza', 'checheni', 'bhenji',
-             'fafitera', 'ferefeta', 'dzoira', 'bangara', 'baya', 'foni', 'fototo', 'dora', 'fugura', 
-             'fashuka', 'chibhende', 'bhadhara', 'donongora', 'babamukuru', 'bveni', 'finha', 'dada', 'funga',
-             'barwe', 'dambuka', 'bhinya', 'cheni', 'chema', 'chidembo', 'bhakiti', 'cheka', 'bhutsu', 
-             'fomoka', 'ereka', 'apuro', 'chachura', 'foto', 'foro', 'chamupupuri', 'chembere', 'bongozozo', 
-             'chidhambakura', 'bonde', 'futi', 'bani', 'dzokorodza', 'fenda', 'bandika', 'dzimba', 'bhawa', 
-             'bhasera', 'ba', 'chaya', 'diki', 'fuduguka', 'bedura', 'chechetere', 'fani', 'chibhubhubhu', 
-             'fashura', 'bango', 'bapu', 'enda', 'fundo', 'dikita', 'chete', 'chidhakwa', 'dyunga', 'fukatira',
-             'bhangi', 'enzera', 'bhenda', 'furuka', 'ambuuya', 'banda', 'dyara', 'chamudzungururu', 
-             'femereka', 'furusa', 'chanzi', 'dhafu', 'chapungu', 'erekana', 'danda', 'embera', 'deuka', 
-             'dimbwa', 'babamudiki', 'faera', 'bhucha', 'dafi', 'amwa', 'furo', 'dzihwa', 'dziviriira', 'doro',
-             'fondodza', 'dzupuka', 'femba', 'chata', 'bhazi', 'dore', 'bapatyuro', 'fano', 'fasitera', 
-             'chari', 'dzimira', 'enzana', 'chayisa', 'bhuru', 'fanza', 'fuza', 'dacha', 'baara', 'chando',
-             'bako', 'eka', 'bofu', 'aizi', 'bhiriji', 'fuma', 'furamera', 'edzaa', 'badarika', 'feya', 
-             'donzva', 'bhoso', 'dzoka', 'da', 'dadamira', 'batapata', 'chidhanana', 'dede', 'chidhinha', 
-             'bandwe', 'boira', 'fototoka', 'fananidza', 'bado', 'dambudzo', 'banganuka', 'chibayiro', 
-             'evhangero', 'dare', 'bhodho', 'bhizautare', 'fobha', 'fungidziro', 'dzimura', 'fudzi', 'evo',
-             'bandana', 'dzipa', 'baramhanya', 'chamunyurududu']
+commands =   ['aini', 'aiwa', 'aizi' ,'akaunzi', 'amai' ,'amaiguru' ,'amainini' ,'ambuka',
+ 'amburenzi', 'ambuuya' ,'ambuya' ,'ambuyamudendere' ,'amwa' ,'angere' ,'ani',
+ 'anika' ,'apa' ,'apo' ,'apuro' ,'asi' ,'ba' ,'baara' ,'baba' ,'babamudiki',
+ 'babamukuru' ,'badarika' ,'bado' ,'badza' ,'baka', 'bakatwa', 'bakayava' ,'bako',
+ 'bakwa' ,'bamba' ,'bambo' ,'bambomukunda' ,'banda' ,'bandakadzi' ,'bandamba',
+ 'bandana' ,'bandaoko' ,'bande' ,'bandika' ,'bandiko' ,'bandwe' ,'banga',
+ 'banganuka' ,'banganwa' ,'bangara' ,'bango' ,'banha' ,'bani' ,'banya' ,'banzuka',
+ 'bapatyuro' ,'bapiro' ,'bapu' ,'bara' ,'baramhanya' ,'barika' ,'barwe' ,'basa',
+ 'batapata' ,'batidza' ,'batsira' ,'baya' ,'bedura' ,'bereka' ,'besu',
+ 'bhabharasi' ,'bhadhara' ,'bhaibheri' ,'bhakiti' ,'bhanditi' ,'bhangi',
+ 'bhangu' ,'bhasera' ,'bhatiri' ,'bhavhu' ,'bhawa' ,'bhazi' ,'bhemba' ,'bhenda',
+ 'bhenji' ,'bheuka' ,'bhinhi' ,'bhinya' ,'bhinzi' ,'bhiridha' ,'bhiriji',
+ 'bhitiruti' ,'bhiya' ,'bhiza' ,'bhizautare' ,'bhodho' ,'bhora' ,'bhoso',
+ 'bhucha' ,'bhudhi' ,'bhurauzi' ,'bhuru' ,'bhutsu' ,'bibiritsa' ,'bofu' ,'boira',
+ 'bonde' ,'bonga' ,'bongozozo' ,'buda' ,'buruuru' ,'bveni' ,'chabudza',
+ 'chachura' ,'chaizvo' ,'chakata' ,'chakwaira' ,'chamhembe' ,'chamudzungururu',
+ 'chamunyurududu' ,'chamupupuri' ,'chando' ,'changamire' ,'chanza' ,'chanzi',
+ 'chapungu' ,'chapupu' ,'chapwititi' ,'chari' ,'chata' ,'chaya' ,'chayisa',
+ 'checheni' ,'chechetere' ,'chechi' ,'cheka' ,'chema' ,'chembere' ,'chenama',
+ 'cheneruka' ,'cheni' ,'chenjera' ,'chenura' ,'chera' ,'chete' ,'chibage',
+ 'chibayiro' ,'chibhende' ,'chibhubhubhu' ,'chibhunu' ,'chibodzwa' ,'chidembo',
+ 'chidhakwa' ,'chidhambakura' ,'chidhanana' ,'chidhinha' ,'chidhokwani',
+ 'chidhoma' ,'chidimburiso' ,'chifananidzo' ,'da' ,'dacha' ,'dada' ,'dadamira',
+ 'dafi' ,'daidza' ,'dakara' ,'dama' ,'damba' ,'dambudziko' ,'dambudzo' ,'dambuka',
+ 'dana' ,'danda' ,'dandadzi' ,'dandaura' ,'danga' ,'dare' ,'dede' ,'dedera',
+ 'dehenya', 'dekara' ,'deuka' ,'dhadha' ,'dhafu' ,'dhaka' ,'dhunduru' ,'dhura',
+ 'diki' ,'dikita' ,'dimbwa' ,'dimikira' ,'dimura' ,'dongorera' ,'donha',
+ 'donongora' ,'donzva' ,'dope' ,'dora' ,'dore' ,'doro' ,'dyara' ,'dyunga',
+ 'dzidza' ,'dzihwa' ,'dzimba' ,'dzimbo' ,'dzimira' ,'dzimura' ,'dzimwaira',
+ 'dzinga', 'dzinza' ,'dzipa' ,'dziva' ,'dziviriira' ,'dzivirira' ,'dzivisa',
+ 'dziya' ,'dzoira' ,'dzoka' ,'dzokorodza' ,"dzoran'ombe" ,'dzoro' ,'dzosera',
+ 'dzupuka' ,'dzvamuka' ,'dzvi' ,'dzviti' ,'dzvoti' ,'dzvova' ,'dzvura' ,'e',
+ 'edza' ,'edzaa' ,'edzesera' ,'eka' ,'ema' ,'embera' ,'enda' ,'enzana' ,'enzera',
+ 'enzvo' ,'era' ,'eredza' ,'ereka' ,'erekana' ,'erera' ,'ererana' ,'evhangero',
+ 'evo' ,'fa' ,'fachuka' ,'fadza' ,'faera' ,'fafadza' ,'fafitera' ,'fakaza',
+ 'fakazi' ,'famba' ,'fana' ,'fanana' ,'fananidza' ,'fani' ,'fanira' ,'fano',
+ 'fanza' ,'fara' ,'faranuka' ,'fararika' ,'fararira' ,'farariraa' ,'farira',
+ 'fashafasha' ,'fashama' ,'fashanuka' ,'fashuka' ,'fashura' ,'fasitera' ,'fata',
+ 'feira' ,'fekitari' ,'fema' ,'femba' ,'fembera' ,'femereka' ,'fenda' ,'ferefeta',
+ 'fetiraiza' ,'feya' ,'fikura' ,'fimbi' ,'finha' ,'finyama' ,'finyana' ,'fobha',
+ 'fodya' ,'fomoka' ,'fondodza' ,'foni' ,'foro' ,'foroma' ,'foromani', 'foto',
+ 'fototo' ,'fototoka' ,'foya' ,'fuchira' ,'fuduguka' ,'fudza' ,'fudzi' ,'fuga',
+ 'fugura' ,'fukatira' ,'fuko' ,'fuma' ,'fumuka' ,'funa' ,'funda' ,'fundo' ,'funga',
+ 'fungidziro' ,'funidza' ,'fupa' ,'fupika' ,'furaimachina' ,'furamera',
+ 'furidza' ,'furira' ,'furo' ,'furuka' ,'furura' ,'furusa' ,'fusha' ,'fushuka',
+ 'futa' ,'futada' ,'futi' ,'futunuka' ,'fuza']
+
 
 # Define the directory you want to clear
 directory_to_clear = "static/audio"
@@ -197,7 +199,7 @@ output_file = 'static/audio/output.wav'
 duration = 2  # Duration of recording in seconds
 
 # Loading the model
-loaded_model = tf.saved_model.load("savd_modl")
+loaded_model = tf.saved_model.load("trained_model")
 
 
 # Route to serve the main HTML PAGE
@@ -209,7 +211,7 @@ def index():
 # Route to record
 @app.route("/record", methods=["POST"])
 def record_to_search():
-    clear_directory(directory_to_clear)
+    # clear_directory(directory_to_clear)
    # Records audio and  change it to wave, and channel to 1(mono)
     record_audio(output_file, duration, channels=2)  # Record with stereo input
     print(f"Audio recorded and saved as {output_file}")
@@ -222,25 +224,21 @@ def record_to_search():
 
 
 # Route to get transcription
-@app.route("/predict", methods=["GET"])
+@app.route("/transcribe", methods=["GET"])
 def predict():
     file_final = 'static/audio/output_cleaned_normalized_trimmed.wav'
-    obj = wave.open(str( file_final), 'rb')
-    n_samples = obj.getnframes()
-    signal_wave = obj.readframes(n_samples)
-    signal_array = np.frombuffer(signal_wave, dtype=np.int16)
-    obj.close()
-    print(signal_array.shape)
-
-    waveform = signal_array/32768
-    waveform = tf.convert_to_tensor(waveform, dtype=tf.float32)
-    spec = get_spectrogram(waveform)
-    spec = tf.expand_dims(spec, 0)
-    prediction = loaded_model(spec)
-
+    file_final =  tf.io.read_file(str(file_final))
+    file_final, sample_rate = tf.audio.decode_wav(file_final, desired_channels=1, desired_samples= 16000 )
+    file_final = tf.squeeze(file_final, axis=-1)
+    waveform = file_final
+    file_final = get_spectrogram(file_final)
+    file_final = file_final[tf.newaxis, ...]
+    
+    prediction = loaded_model(file_final)
+    
     #transcribing
-    transcript = np.argmax(prediction, axis= 1)
-    print( f'Predicted transcript "{commands[transcript[0]]}"')
+    transcript = np.argmax(prediction, axis=1)
+    print( f'transcript "{commands[transcript[0]]}"')
     return jsonify({"transcript": commands[transcript[0]]})
 
 if __name__ == "__main__":

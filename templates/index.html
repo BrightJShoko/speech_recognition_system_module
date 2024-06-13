@@ -19,19 +19,23 @@
         <h1 class="mainheading">SPEECH RECOGNITION SYSTEM</h1>
       </div>
       <div class="container">
-        <button onclick="reloadAudio()" id="recordButton">
-          <i class="bi bi-mic-fill"></i>Record
-        </button>
+        <button id="recordButton"><i class="bi bi-mic-fill"></i>Record</button>
         <textarea
           onclick="reloadAudio()"
           id="transcript"
           placeholder="Transcribed Text Will apear here"
         ></textarea>
-        <audio controls id="audio-player" style="display: none">
+        <audio
+          onclick="reloadAudio()"
+          controls
+          id="audio-player"
+          style="display: none"
+        >
           <source src="{{ audio_file_path }}" type="audio/wav" />
         </audio>
       </div>
     </div>
+
     <script>
       const transcriptInput = document.getElementById("transcript");
       const recordButton = document.getElementById("recordButton");
@@ -49,9 +53,11 @@
 
           if (response.ok) {
             document.getElementById("recordButton").disabled = false;
-            const transcriptionResponse = await fetch("/predict");
+            const transcriptionResponse = await fetch("/transcribe");
             const transcriptionData = await transcriptionResponse.json();
             transcriptInput.value = transcriptionData.transcript;
+            reloadAudio();
+            reloadAudio();
           } else {
             console.error("Recording failed.");
           }
@@ -60,7 +66,13 @@
         } finally {
           recordButton.style.display = "block";
           reloadAudio();
+          reloadAudio();
+          reloadAudio();
           audioPlayer.style.display = "block";
+          reloadAudio();
+          reloadAudio();
+          reloadAudio();
+          reloadAudio();
         }
       });
 
