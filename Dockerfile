@@ -3,11 +3,6 @@ FROM python:3.9-slim
 # Set the working directory
 WORKDIR /app
 
-# Install necessary system dependencies
-RUN apt-get update
-RUN apt-get install libasound-dev libportaudio2 libportaudiocpp0 portaudio19-dev -y
-RUN apt-get install gcc -y
-
 # Copy the requirements file
 COPY requirements.txt .
 
