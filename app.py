@@ -4,7 +4,6 @@ import os
 import tensorflow as tf
 import numpy as np
 import wave
-#import sounddevice as sd
 import librosa
 import scipy.io.wavfile as wavfile
 import noisereduce as nr
